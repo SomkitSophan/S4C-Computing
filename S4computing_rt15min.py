@@ -16,12 +16,12 @@ PRN_list = ['G01', 'G02', 'G03', 'G04', 'G05', 'G06', 'G07', 'G08', 'G09', 'G10'
             'G31', 'G32']
 
 # === Initial setup ===
-Input_path = ""  # *** Input path ***
-Output_path = ""   # *** Output path ***
+Input_path = "C:/S4C_Computations/Results/"  # *** Input path ***
+Output_path = "C:/S4C_Computations/Results/"   # *** Output path ***
 CNR_mask = 30    # C/N0 mask
 Ele_mask = 15    # Elevation mask
-Station = "SN560"    # Station code "XXXX"
-Satellite = "GPS"   # Satellite system "XXX"
+Station = "SNxxx"   # Station code
+Satellite = "GPS"   # Satellite system
 Windows_SI_det = 10     # Window size for computing the SI_det values
 Windows_S4C = 10    # Window size for computing the S4C values
 Windows_Sm = 15     # Window size for smoothing the S4C values
