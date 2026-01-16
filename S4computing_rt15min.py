@@ -20,7 +20,7 @@ Input_path = "C:/S4C_Computations/Results/"  # *** Input path ***
 Output_path = "C:/S4C_Computations/Results/"   # *** Output path ***
 CNR_mask = 30    # C/N0 mask
 Ele_mask = 15    # Elevation mask
-Station = "SNxxx"   # Station code
+Station = "SSSS"   # Station code
 Satellite = "GPS"   # Satellite system
 Windows_SI_det = 10     # Window size for computing the SI_det values
 Windows_S4C = 10    # Window size for computing the S4C values
@@ -70,19 +70,19 @@ for root, dirs, files in os.walk(Input_path):
                                     index=[Epoch_temp[0] + dt.timedelta(seconds=Windows_SI_det + Windows_S4C - 1)], columns=PRN_list)
 
                 Start = time.time()
-                Count = 1
                 print("Compute S4Cs...")
                 for ind_t in Obs_C1.index.levels[0]:  # A sampling time loop
                     try:
                         Ci = Obs_C1[ind_t]
                         Si = Obs_S1[ind_t]
                         PRN = Obs_C1[ind_t].index.values
-                        SOD = ind_t.hour * 3600 + ind_t.minute * 60 + ind_t.second  # Second of day
+                        SOD = ind_t.hour * 3600 + ind_t.minute * 60 + ind_t.second  # Second of day   
                     except:
                         continue
 
                     ind_n = isnan(Ci.values) | isnan(Si.values)  # Matched information between Ci and Si
                     PRN = delete(PRN, ind_n)
+                    Count = SOD
 
                     S1.loc[ind_t, :] = nan
                     if S1.__len__() >= Windows_SI_det:
@@ -135,8 +135,6 @@ for root, dirs, files in os.walk(Input_path):
 
                     if S4C_L1.__len__() >= Windows_Sm:
                         S4C_L1 = S4C_L1.drop(S4C_L1.index[0])
-
-                    Count += 1
 
                 Finish = time.time()
                 print("Compute S4Cs in", "{0:.2f}".format(Finish - Start), "seconds.")
