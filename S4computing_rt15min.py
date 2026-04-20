@@ -25,12 +25,15 @@ Satellite = "GPS"   # Satellite system
 Windows_SI_det = 10     # Window size for computing the SI_det values
 Windows_S4C = 10    # Window size for computing the S4C values
 Windows_Sm = 15     # Window size for smoothing the S4C values
+# === Conditions for computing S4C statuses ===
+S4C_Low = 0.2    # S4C threshold for low scintillation
+S4C_Medium = 0.4 # S4C threshold for medium scintillation
 
 # === Begin positioning error calculation ===
 for root, dirs, files in os.walk(Input_path):
     if len(root):
-        Obs_files = glob.glob(root + Station + "*.*o", recursive=True)
-        Nav_files = glob.glob(root + Station + "*.*n", recursive=True)
+        Obs_files = glob.glob(root + ObsST + "*.*o", recursive=True)
+        Nav_files = glob.glob(root + NavST + "*.*n", recursive=True)
         if len(Obs_files) & len(Nav_files):
             for i in range(0, len(Obs_files), 1):
                 if Obs_files[i][-8:-1] == Nav_files[i][-8:-1]:
@@ -64,10 +67,7 @@ for root, dirs, files in os.walk(Input_path):
                                    index=[Epoch_temp[0]+dt.timedelta(seconds=Windows_SI_det+Windows_S4C-1)], columns=PRN_list)
                 S4C_L1_Sm = DataFrame(ones((1, PRN_list.__len__())) * nan,
                                    index=[Epoch_temp[0] + dt.timedelta(seconds=Windows_SI_det+Windows_S4C-1)], columns=PRN_list)
-                Lat_ipp = DataFrame(ones((1, PRN_list.__len__())) * nan,
-                                    index=[Epoch_temp[0] + dt.timedelta(seconds=Windows_SI_det + Windows_S4C - 1)], columns=PRN_list)
-                Lon_ipp = DataFrame(ones((1, PRN_list.__len__())) * nan,
-                                    index=[Epoch_temp[0] + dt.timedelta(seconds=Windows_SI_det + Windows_S4C - 1)], columns=PRN_list)
+                SV_DateTime_Stat_LatLon_ST = [] # Log S4C map
 
                 Start = time.time()
                 print("Compute S4Cs...")
@@ -91,8 +91,6 @@ for root, dirs, files in os.walk(Input_path):
                         S4C_L1.loc[ind_t, :] = nan
                         if S4C_L1.__len__() >= Windows_Sm:
                             S4C_L1_Sm.loc[ind_t, :] = nan
-                            Lat_ipp.loc[ind_t, :] = nan
-                            Lon_ipp.loc[ind_t, :] = nan
 
                     for ind_i in PRN:  # A PRN loop
                         # Satellite position estimations
@@ -122,8 +120,7 @@ for root, dirs, files in os.walk(Input_path):
                                     # Smooth S4C values
                                     if S4C_L1.__len__() >= Windows_Sm:
                                         S4C_L1_Sm.loc[ind_t, ind_i] = mean(S4C_L1.loc[:, ind_i])
-                                        Lat_ipp.loc[ind_t, ind_i] = LLA_ipp[0]
-                                        Lon_ipp.loc[ind_t, ind_i] = LLA_ipp[1]
+                                        SV_DateTime_Stat_LatLon_ST.append([ind_i, ind_t, S4C_L1_Sm.loc[ind_t, ind_i], LLA_ipp[0], LLA_ipp[1], ObsST])
                         else:
                             continue
 
@@ -140,15 +137,23 @@ for root, dirs, files in os.walk(Input_path):
                 print("Compute S4Cs in", "{0:.2f}".format(Finish - Start), "seconds.")
 
                 # --- Save S4C calculation ---
-                S4C_L1_Sm.to_csv(Output_path + Station + "_S4C_last15min.csv")
-                Lat_ipp.to_csv(Output_path + Station + "_Lat_last15min.csv")
-                Lon_ipp.to_csv(Output_path + Station + "_Lon_last15min.csv")
+                S4C_map = DataFrame(SV_DateTime_Stat_LatLon_ST, columns=["sv", "utc", "s4c", "lat","lon", "station"])
+
+                # Export as JSON for easier interoperability (ISO datetimes, record array)
+                json_path = Output_path + ObsST + "_S4C_last15min.json"
+                S4C_map.to_json(json_path,
+                                orient="records",
+                                date_format="iso",
+                                date_unit="s",
+                                force_ascii=False,
+                                indent=2)
 
                 # # --- plot ---
                 # pyplot.cla()
                 # pyplot.plot(S4C_L1_Sm)
-                # pyplot.xlabel('UTC')
-                # pyplot.ylabel('S4C')
+                # pyplot.title(ObsST)
+                # pyplot.xlabel(r'UTC')
+                # pyplot.ylabel(r'S$_{4C}$')
                 # pyplot.ylim((0, 1))
                 # pyplot.grid(True)
                 # pyplot.show()
